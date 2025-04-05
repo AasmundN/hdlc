@@ -24,3 +24,5 @@ I.e. after an abort the Rx_Overflow bit should be 0, unless an overflow also occ
 16. Non-byte aligned data or error in FCS checking should result in frame error.
 17. Tx_Done should be asserted when the entire TX buffer has been read for transmission.
 18. Tx_Full should be asserted after writing 126 or more bytes to the TX buffer (overflow).
+
+Test
