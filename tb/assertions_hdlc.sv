@@ -33,12 +33,12 @@ module assertions_hdlc (
    *  Flag sequences                         *
    *******************************************/
 
-  sequence Flag_Sequence;
-    !Rx ##1 Rx[*6] ##1 !Rx; // flag is 0111_1110
+  sequence Flag_Sequence(signal);
+    !signal ##1 signal[*6] ##1 !signal; // flag is 0111_1110
   endsequence
 
-  sequence Abort_Flag;
-    !Tx ##1 Tx[*7]; // abort flag is 1111_1110
+  sequence Abort_Flag(signal);
+    !signal ##1 signal[*7]; // abort flag is 1111_1110
   endsequence
 
   /*******************************************
@@ -47,7 +47,7 @@ module assertions_hdlc (
 
   // Check if flag sequence is detected
   property RX_FlagDetect;
-    @(posedge Clk) Flag_Sequence |-> ##2 Rx_FlagDetect;
+    @(posedge Clk) Flag_Sequence(Rx) |-> ##2 Rx_FlagDetect;
   endproperty
 
   RX_FlagDetect_Assert : assert property (RX_FlagDetect) begin
@@ -78,7 +78,7 @@ module assertions_hdlc (
    ********************************************/
 
   property RX_AbortDetect;
-    @(posedge Clk) Abort_Flag |=> Rx_AbortDetect;
+    @(posedge Clk) Abort_Flag(Rx) |=> Rx_AbortDetect;
   endproperty
 
   Rx_AbortDetect_Assert : assert property (RX_AbortDetect) begin
@@ -93,7 +93,7 @@ module assertions_hdlc (
    ********************************************/
 
   property TX_AbortFrame;
-    @(posedge Clk) !Tx_AbortFrame ##1 Tx_AbortFrame |=> Abort_Flag;
+    @(posedge Clk) !Tx_AbortFrame ##1 Tx_AbortFrame |=> Abort_Flag(Tx);
   endproperty
 
   TX_AbortFrame_Assert : assert property (TX_AbortFrame) begin 
