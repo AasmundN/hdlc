@@ -8,10 +8,6 @@
    assertions. It is used by binding the signals of assertions_hdlc to the
    corresponding signals in the test_hdlc testbench. This is already done in
    bind_hdlc.sv 
-
-   For this exercise you will write concurrent assertions for the Rx module:
-   - Verify that Rx_FlagDetect is asserted two cycles after a flag is received
-   - Verify that Rx_AbortSignal is asserted after receiving an abort flag
 */
 
 module assertions_hdlc (
@@ -38,13 +34,12 @@ module assertions_hdlc (
    *******************************************/
 
   sequence Rx_flag;
-    // INSERT CODE HERE
     Rx == 0 ##1 Rx[*6] ##1 Rx == 0;
   endsequence
 
   // Check if flag sequence is detected
   property RX_FlagDetect;
-    @(posedge Clk) Rx_flag |-> ##2 Rx_FlagDetect;
+    @(posedge Clk) Rx_flag |-> ##2 Rx_FlagDetect; // flag is 0111_1110
   endproperty
 
   RX_FlagDetect_Assert : assert property (RX_FlagDetect) begin
@@ -69,5 +64,25 @@ module assertions_hdlc (
     $error("AbortSignal did not go high after AbortDetect during validframe"); 
     ErrCntAssertions++; 
   end
+
+  /********************************************
+   *  Verify generation of abort flag         *
+   ********************************************/
+
+  sequence Abort_Flag;
+    !Tx ##1 Tx[*7]; // abort flag is 1111_1110
+  endsequence
+
+  property TX_AbortFrame;
+    @(posedge Clk) !Tx_AbortFrame ##1 Tx_AbortFrame |=> Abort_Flag;
+  endproperty
+
+  TX_AbortFrame : assert property (TX_AbortFrame) begin 
+    $display("PASS: Abort flag generated");
+  end else begin
+    $error("Abort flag not generated on aborted TX frame");
+    ErrCntAssertions++;
+  end
+
 
 endmodule
