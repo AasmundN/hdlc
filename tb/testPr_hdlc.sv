@@ -303,7 +303,7 @@ program testPr_hdlc(
 
     WriteAddress(Tx_SC, 8'b1 << Tx_Enable);
 
-    // wait for CRC calculation to finis
+    // wait for CRC calculation to finish
     wait(!uin_hdlc.Tx);
 
     if (Abort) begin

@@ -99,7 +99,7 @@ module assertions_hdlc (
 
   property TX_AbortFrame;
     @(posedge Clk)
-    !Tx_AbortFrame ##1 Tx_AbortFrame |=> Abort_Flag(Tx);
+    !Tx_AbortFrame ##1 Tx_AbortFrame |=> ##3 Abort_Flag(Tx);
   endproperty
 
   TX_AbortFrame_Assert : assert property (TX_AbortFrame) begin 
