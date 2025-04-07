@@ -47,7 +47,8 @@ module assertions_hdlc (
 
   // Check if flag sequence is detected
   property RX_FlagDetect;
-    @(posedge Clk) Flag_Sequence(Rx) |-> ##2 Rx_FlagDetect;
+    @(posedge Clk)
+    Flag_Sequence(Rx) |-> ##2 Rx_FlagDetect;
   endproperty
 
   RX_FlagDetect_Assert : assert property (RX_FlagDetect) begin
@@ -63,11 +64,12 @@ module assertions_hdlc (
 
   //If abort is detected during valid frame. then abort signal should go high
   property RX_AbortSignal;
-    @(posedge Clk) Rx_AbortDetect && Rx_ValidFrame |=> Rx_AbortSignal;
+    @(posedge Clk)
+    Rx_AbortDetect && Rx_ValidFrame |=> Rx_AbortSignal;
   endproperty
 
   RX_AbortSignal_Assert : assert property (RX_AbortSignal) begin
-    $display("PASS: Abort signal");
+    $display("PASS: Abort signal asserted after abort detected");
   end else begin 
     $error("AbortSignal did not go high after AbortDetect during validframe"); 
     ErrCntAssertions++; 
@@ -78,13 +80,16 @@ module assertions_hdlc (
    ********************************************/
 
   property RX_AbortDetect;
-    @(posedge Clk) Abort_Flag(Rx) |=> Rx_AbortDetect;
+    @(posedge Clk) 
+    // avoids detecting the final 0 of end flag as start of abort
+    disable iff (!Rx_ValidFrame)
+    Abort_Flag(Rx) |=> ##1 Rx_AbortDetect;
   endproperty
 
   Rx_AbortDetect_Assert : assert property (RX_AbortDetect) begin
-    $display("PASS: Abort flag detected");
+    $display("PASS: Abort flag detected after received abort sequence");
   end else begin 
-    $error("Abort flag not detected"); 
+    $error("Abort flag not detected after received abort sequence"); 
     ErrCntAssertions++; 
   end
 
@@ -93,11 +98,12 @@ module assertions_hdlc (
    ********************************************/
 
   property TX_AbortFrame;
-    @(posedge Clk) !Tx_AbortFrame ##1 Tx_AbortFrame |=> Abort_Flag(Tx);
+    @(posedge Clk)
+    !Tx_AbortFrame ##1 Tx_AbortFrame |=> Abort_Flag(Tx);
   endproperty
 
   TX_AbortFrame_Assert : assert property (TX_AbortFrame) begin 
-    $display("PASS: Abort flag generated");
+    $display("PASS: Abort flag generated on TX abort");
   end else begin
     $error("Abort flag not generated on aborted TX frame");
     ErrCntAssertions++;
