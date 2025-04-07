@@ -77,7 +77,7 @@ module assertions_hdlc (
     @(posedge Clk) !Tx_AbortFrame ##1 Tx_AbortFrame |=> Abort_Flag;
   endproperty
 
-  TX_AbortFrame : assert property (TX_AbortFrame) begin 
+  TX_AbortFrame_Assert : assert property (TX_AbortFrame) begin 
     $display("PASS: Abort flag generated");
   end else begin
     $error("Abort flag not generated on aborted TX frame");
