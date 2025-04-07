@@ -47,7 +47,7 @@ module assertions_hdlc (
 
   // Check if flag sequence is detected
   property RX_FlagDetect;
-    @(posedge Clk) Rx_Sequence |-> ##2 Rx_FlagDetect;
+    @(posedge Clk) Flag_Sequence |-> ##2 Rx_FlagDetect;
   endproperty
 
   RX_FlagDetect_Assert : assert property (RX_FlagDetect) begin
@@ -102,6 +102,5 @@ module assertions_hdlc (
     $error("Abort flag not generated on aborted TX frame");
     ErrCntAssertions++;
   end
-
 
 endmodule
