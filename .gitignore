@@ -4,3 +4,5 @@ work
 nohup*
 transcript
 *.wlf
+.nfs*
+*.vstf

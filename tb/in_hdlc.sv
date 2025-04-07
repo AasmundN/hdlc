@@ -51,4 +51,8 @@ interface in_hdlc ();
   logic       RxD;
   logic       ZeroDetect;
 
+  // Tx
+  logic       Tx_AbortFrame;
+  logic       Tx_Done;
+
 endinterface
