@@ -30,6 +30,7 @@ module RxBuff(
   logic              RstCount;      //Reset counter
   logic        [7:0] Count;         //Number of Writes/Reads
   logic [127:0][7:0] DataArray;     //RX buffer
+
   enum logic [1:0] {
     IDLE,
     WRITE,

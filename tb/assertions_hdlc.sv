@@ -19,12 +19,14 @@ module assertions_hdlc (
   input  logic Clk,
   input  logic Rst,
   input  logic Rx,
+  input  logic Tx,
   input  logic Rx_FlagDetect,
   input  logic Rx_ValidFrame,
   input  logic Rx_AbortDetect,
   input  logic Rx_AbortSignal,
   input  logic Rx_Overflow,
-  input  logic Rx_WrBuff
+  input  logic Rx_WrBuff,
+  input  logic Tx_AbortFrame
 );
 
   initial begin
