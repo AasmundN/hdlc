@@ -30,16 +30,24 @@ module assertions_hdlc (
   end
 
   /*******************************************
+   *  Flag sequences                         *
+   *******************************************/
+
+  sequence Flag_Sequence;
+    !Rx ##1 Rx[*6] ##1 !Rx; // flag is 0111_1110
+  endsequence
+
+  sequence Abort_Flag;
+    !Tx ##1 Tx[*7]; // abort flag is 1111_1110
+  endsequence
+
+  /*******************************************
    *  Verify correct Rx_FlagDetect behavior  *
    *******************************************/
 
-  sequence Rx_flag;
-    Rx == 0 ##1 Rx[*6] ##1 Rx == 0;
-  endsequence
-
   // Check if flag sequence is detected
   property RX_FlagDetect;
-    @(posedge Clk) Rx_flag |-> ##2 Rx_FlagDetect; // flag is 0111_1110
+    @(posedge Clk) Rx_Sequence |-> ##2 Rx_FlagDetect;
   endproperty
 
   RX_FlagDetect_Assert : assert property (RX_FlagDetect) begin
@@ -66,12 +74,23 @@ module assertions_hdlc (
   end
 
   /********************************************
-   *  Verify generation of abort flag         *
+   *  Verify detection of abort flag on RX    *
    ********************************************/
 
-  sequence Abort_Flag;
-    !Tx ##1 Tx[*7]; // abort flag is 1111_1110
-  endsequence
+  property RX_AbortDetect;
+    @(posedge Clk) Abort_Flag |=> Rx_AbortDetect;
+  endproperty
+
+  Rx_AbortDetect_Assert : assert property (RX_AbortDetect) begin
+    $display("PASS: Abort flag detected");
+  end else begin 
+    $error("Abort flag not detected"); 
+    ErrCntAssertions++; 
+  end
+
+  /********************************************
+   *  Verify generation of abort flag         *
+   ********************************************/
 
   property TX_AbortFrame;
     @(posedge Clk) !Tx_AbortFrame ##1 Tx_AbortFrame |=> Abort_Flag;
