@@ -57,23 +57,23 @@ program testPr_hdlc(
 
     assert (ReadData[Rx_Ready] == 0)
       $display("PASS: Rx_Buff has no data");
-      else $error("FAIL: Rx_Ready not set in Rx_SC");
+      else $error("FAIL: Rx_Ready asserted in Rx_SC");
 
     assert (ReadData[Rx_FrameError] == 0)
       $display("PASS: No frame error");
-      else $error("FAIL: Rx_Ready not set in Rx_SC");
+      else $error("FAIL: Rx_FrameError asserted in Rx_SC");
 
     assert (ReadData[Rx_AbortSignal] == 1)
       $display("PASS: Abort signal asserted");
-      else $error("FAIL: Rx_Ready not set in Rx_SC");
+      else $error("FAIL: Rx_Abortsignal not asserted in Rx_SC");
 
     assert (ReadData[Rx_Overflow] == 0)
       $display("PASS: No overflow signal");
-      else $error("FAIL: Rx_Ready not set in Rx_SC");
+      else $error("FAIL: Rx_Overflow asserted in Rx_SC");
 
     // check Rx buffer empty
     ReadAddress(Rx_Buff, ReadData);
-    assert (|ReadData == 0)
+    assert (ReadData == 0)
       $display("PASS: Rx_Buff is empty");
       else $error("FAIL: Rx_Buff not empty on aborted frame");
 
@@ -94,15 +94,15 @@ program testPr_hdlc(
 
     assert (ReadData[Rx_FrameError] == 0)
       $display("PASS: No frame error");
-      else $error("FAIL: Rx_Ready not set in Rx_SC");
+      else $error("FAIL: Rx_FrameError asserted in Rx_SC");
 
     assert (ReadData[Rx_AbortSignal] == 0)
       $display("PASS: No abort signal");
-      else $error("FAIL: Rx_Ready not set in Rx_SC");
+      else $error("FAIL: Rx_AbortSignal asserted in Rx_SC");
 
     assert (ReadData[Rx_Overflow] == 0)
       $display("PASS: No overflow signal");
-      else $error("FAIL: Rx_Ready not set in Rx_SC");
+      else $error("FAIL: Rx_Overflow asserted in Rx_SC");
 
     // Verify received data
     for (int i = 0; i < Size; i++) begin
@@ -129,16 +129,81 @@ program testPr_hdlc(
 
     assert (ReadData[Rx_FrameError] == 0)
       $display("PASS: No frame error");
-      else $error("FAIL: Rx_Ready not set in Rx_SC");
+      else $error("FAIL: Rx_FrameError asserted in Rx_SC");
 
     assert (ReadData[Rx_AbortSignal] == 0)
       $display("PASS: No abort signal");
-      else $error("FAIL: Rx_Ready not set in Rx_SC");
+      else $error("FAIL: Rx_AbortSignal asserted in Rx_SC");
 
     assert (ReadData[Rx_Overflow] == 1)
       $display("PASS: Overflow signal asserted");
-      else $error("FAIL: Rx_Ready not set in Rx_SC");
+      else $error("FAIL: Rx_Overflow not asserted in Rx_SC");
   
+    // Verify received data
+    for (int i = 0; i < Size; i++) begin
+      ReadAddress(Rx_Buff, ReadData);
+      assert (ReadData == data[i])
+        $display("PASS: Rx buff has correct data");
+        else $error("FAIL: Data mismatch on byte %d: got %b, expected %b", i, ReadData, data[i]);
+    end
+  endtask
+
+  task VerifyErrorReceive(logic [127:0][7:0] data, int Size);
+    logic [7:0] ReadData;
+
+    // Verify status register bits
+    ReadAddress(Rx_SC, ReadData);
+
+    assert (ReadData[Rx_Ready] == 0)
+      $display("PASS: Rx_Buff has no data");
+      else $error("FAIL: Rx_Ready asserted in Rx_SC");
+
+    assert (ReadData[Rx_FrameError] == 1)
+      $display("PASS: Frame error detected");
+      else $error("FAIL: Rx_FrameError not asserted in Rx_SC");
+
+    assert (ReadData[Rx_AbortSignal] == 0)
+      $display("PASS: No abort signal");
+      else $error("FAIL: Rx_AbortSignal asserted in Rx_SC");
+
+    assert (ReadData[Rx_Overflow] == 0)
+      $display("PASS: No overflow signal");
+      else $error("FAIL: Rx_Overflow asserted in Rx_SC");
+
+    // check Rx buffer empty
+    ReadAddress(Rx_Buff, ReadData);
+    assert (ReadData == 0)
+      $display("PASS: Rx_Buff is empty");
+      else $error("FAIL: Rx_Buff not empty on error frame");
+  endtask
+
+  task VerifyDroppedReceive(logic [127:0][7:0] data, int Size);
+    logic [7:0] ReadData;
+
+    // Verify status register bits
+    ReadAddress(Rx_SC, ReadData);
+
+    assert (ReadData[Rx_Ready] == 0)
+      $display("PASS: Rx_Buff has no data");
+      else $error("FAIL: Rx_Ready asserted in Rx_SC");
+
+    assert (ReadData[Rx_FrameError] == 0)
+      $display("PASS: No frame error");
+      else $error("FAIL: Rx_FrameError asserted in Rx_SC");
+
+    assert (ReadData[Rx_AbortSignal] == 0)
+      $display("PASS: No abort signal");
+      else $error("FAIL: Rx_AbortSignal asserted in Rx_SC");
+
+    assert (ReadData[Rx_Overflow] == 0)
+      $display("PASS: No overflow signal");
+      else $error("FAIL: Rx_Overflow asserted in Rx_SC");
+
+    // check Rx buffer empty
+    ReadAddress(Rx_Buff, ReadData);
+    assert (ReadData == 0)
+      $display("PASS: Rx_Buff is empty after dropped frame");
+      else $error("FAIL: Rx_Buff not empty on dropped frame");
   endtask
 
   /****************************************************************************
@@ -164,6 +229,11 @@ program testPr_hdlc(
     Receive(126, 0, 0, 0, 1, 0, 0); //Overflow
     Receive( 25, 0, 0, 0, 0, 0, 0); //Normal
     Receive( 47, 0, 0, 0, 0, 0, 0); //Normal
+    Receive( 23, 0, 1, 0, 0, 0, 0); //FrameError FCSerr
+    Receive(  5, 0, 0, 0, 0, 0, 0); //Normal
+    Receive( 42, 0, 0, 0, 0, 1, 0); //FrameDropped
+    Receive(  6, 0, 0, 0, 0, 0, 0); //Normal
+    Receive( 33, 0, 0, 1, 0, 0, 0); //FrameError NonByteAligned
 
     $display("*************************************************************");
     $display("%t - Finishing Test Program", $time);
@@ -294,40 +364,59 @@ program testPr_hdlc(
     ReceiveData[Size]   = FCSBytes[7:0];
     ReceiveData[Size+1] = FCSBytes[15:8];
 
-    //Enable FCS
-    if(!Overflow && !NonByteAligned)
-      WriteAddress(Rx_SC, 8'h20);
-    else
-      WriteAddress(Rx_SC, 8'h00);
+      //Enable FCS
+      if(!Overflow && !NonByteAligned)
+        WriteAddress(Rx_SC, 8'h20);
+      else
+        WriteAddress(Rx_SC, 8'h00);
 
-    //Generate stimulus
-    InsertFlagOrAbort(1);
+        //Generate stimulus
+        InsertFlagOrAbort(1);
+
+      if(FCSerr) begin
+        ReceiveData[Size-1] -= 1;
+      end
+
+      MakeRxStimulus(ReceiveData, Size + 2);
     
-    MakeRxStimulus(ReceiveData, Size + 2);
-    
-    if(Overflow) begin
-      OverflowData[0] = 8'h44;
-      OverflowData[1] = 8'hBB;
-      OverflowData[2] = 8'hCC;
-      MakeRxStimulus(OverflowData, 3);
-    end
+      if(Overflow) begin
+        OverflowData[0] = 8'h44;
+        OverflowData[1] = 8'hBB;
+        OverflowData[2] = 8'hCC;
+        MakeRxStimulus(OverflowData, 3);
+      end
 
-    if(Abort) begin
-      InsertFlagOrAbort(0);
-    end else begin
-      InsertFlagOrAbort(1);
-    end
+      if (NonByteAligned) begin
+        @(posedge uin_hdlc.Clk);
+        uin_hdlc.Rx = 0;
+      end
 
-    @(posedge uin_hdlc.Clk);
-    uin_hdlc.Rx = 1'b1;
+      if(Abort) begin
+        InsertFlagOrAbort(0);
+      end else begin
+        InsertFlagOrAbort(1);
+      end
 
-    repeat(8)
       @(posedge uin_hdlc.Clk);
+      uin_hdlc.Rx = 1'b1;
+
+      if(Drop) begin //Only check scenario when frame is dropped after Rx_ready gone high
+        repeat(8)
+          @(posedge uin_hdlc.Clk);
+        WriteAddress(Rx_SC, 8'h02);
+      end
+
+      repeat(8)
+        @(posedge uin_hdlc.Clk);
 
     if(Abort)
       VerifyAbortReceive(ReceiveData, Size);
     else if(Overflow)
       VerifyOverflowReceive(ReceiveData, Size);
+    else if(FCSerr || NonByteAligned)
+      VerifyErrorReceive(ReceiveData, Size);
+    else if(Drop)
+      VerifyDroppedReceive(ReceiveData, Size);
     else if(!SkipRead)
       VerifyNormalReceive(ReceiveData, Size);
 
