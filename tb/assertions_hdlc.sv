@@ -30,23 +30,42 @@ module assertions_hdlc (
    * Local signals and error count           *
    *******************************************/
 
-  logic Transmitting;
+  logic TransmittingFrame;
+  logic TransmittingFrameContent;
 
   initial begin
     ErrCntAssertions  =  0;
-    Transmitting = 0'b0;
-    
-    while (1) begin // create local signal to check weather we are transmitting or not
+    TransmittingFrame = 0'b0;
+    TransmittingFrameContent = 0'b0;
+  end
+
+  initial begin // TransmittingFrame is asserted during frame transmition, including flags
+    while (1) begin
       wait(Tx_ValidFrame);
 
-      Transmitting = 0'b1;
+      TransmittingFrame = 0'b1;
 
       wait(!Tx_ValidFrame);
 
       repeat(9) // give time to generate end/abort flag
         @(posedge Clk);
 
-      Transmitting = 0'b0;
+      TransmittingFrame = 0'b0;
+    end
+  end
+
+  initial begin // TransmittingFrameContent is assert during frame transmition, not including flags
+    while (1) begin
+      wait(Tx_ValidFrame);
+
+      repeat(10) // give time to generate start flag
+        @(posedge Clk);
+
+      TransmittingFrameContent = 0'b1;
+
+      wait(!Tx_ValidFrame);
+
+      TransmittingFrameContent = 0'b0;
     end
   end
 
@@ -156,12 +175,29 @@ module assertions_hdlc (
 
   property TX_IdlePattern;
     @(posedge Clk)
-    !Transmitting |-> Tx;
+    !TransmittingFrame |-> Tx;
   endproperty
 
   TX_IdlePattern_Assert : assert property (TX_IdlePattern)
   else begin
     $error("FAIL: Idle pattern not generated when not transmitting");
+    ErrCntAssertions++;
+  end
+
+  /********************************************
+   * Verify zero insertion                    *
+   ********************************************/
+
+  property TX_ZeroInsertion;
+    @(posedge Clk)
+    disable iff (!TransmittingFrameContent)
+    Tx[*5] |=> !Tx;
+  endproperty
+
+  TX_ZeroInsertion_Assert : assert property (TX_ZeroInsertion)
+  $display("Mog");
+  else begin
+    $error("FAIL: Zero not inserted after five consecutive ones");
     ErrCntAssertions++;
   end
 

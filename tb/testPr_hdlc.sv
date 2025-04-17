@@ -232,7 +232,6 @@ program testPr_hdlc(
     Transmit( 42, 1, 0);            //Abort
 
     //Receive: Size, Abort, FCSerr, NonByteAligned, Overflow, Drop, SkipRead
-    /*
     Receive( 10, 0, 0, 0, 0, 0, 0); //Normal
     Receive( 40, 1, 0, 0, 0, 0, 0); //Abort
     Receive(126, 0, 0, 0, 1, 0, 0); //Overflow
@@ -247,7 +246,6 @@ program testPr_hdlc(
     Receive( 42, 0, 0, 0, 0, 1, 0); //FrameDropped
     Receive(  6, 0, 0, 0, 0, 0, 0); //Normal
     Receive( 33, 0, 0, 1, 0, 0, 0); //FrameError NonByteAligned
-    */
 
     $display("*************************************************************");
     $display("%t - Finishing Test Program", $time);
