@@ -22,7 +22,9 @@ module assertions_hdlc (
   input  logic Rx_AbortSignal,
   input  logic Rx_Overflow,
   input  logic Rx_WrBuff,
-  input  logic Tx_AbortFrame
+  input  logic Tx_AbortFrame,
+  input  logic Tx_AbortedTrans,
+  input  logic Tx_ValidFrame
 );
 
   initial begin
@@ -30,7 +32,7 @@ module assertions_hdlc (
   end
 
   /*******************************************
-   *  Flag sequences                         *
+   * Flag sequences                          *
    *******************************************/
 
   sequence Flag_Sequence(signal);
@@ -42,7 +44,7 @@ module assertions_hdlc (
   endsequence
 
   /*******************************************
-   *  Verify correct Rx_FlagDetect behavior  *
+   * Verify correct Rx_FlagDetect behavior   *
    *******************************************/
 
   // Check if flag sequence is detected
@@ -59,7 +61,7 @@ module assertions_hdlc (
   end
 
   /********************************************
-   *  Verify correct Rx_AbortSignal behavior  *
+   * Verify correct Rx_AbortSignal behavior   *
    ********************************************/
 
   //If abort is detected during valid frame. then abort signal should go high
@@ -76,7 +78,7 @@ module assertions_hdlc (
   end
 
   /********************************************
-   *  Verify detection of abort flag on RX    *
+   * Verify detection of abort flag on RX     *
    ********************************************/
 
   property RX_AbortDetect;
@@ -94,7 +96,7 @@ module assertions_hdlc (
   end
 
   /********************************************
-   *  Verify generation of abort flag         *
+   * Verify generation of abort flag          *
    ********************************************/
 
   property TX_AbortFrame;
@@ -108,5 +110,22 @@ module assertions_hdlc (
     $error("Abort flag not generated on aborted TX frame");
     ErrCntAssertions++;
   end
+
+  /********************************************
+   * Verify correct Tx_AbortedTrans behaviour *
+   ********************************************/
+
+  property TX_AbortedTrans;
+    @(posedge Clk)
+    !Tx_AbortFrame ##1 Tx_AbortFrame && Tx_ValidFrame |=> Tx_AbortedTrans;
+  endproperty
+
+  TX_AbortedTrans_Assert : assert property (TX_AbortFrame) begin 
+    $display("PASS: Tx_AbortedSignal asserted after aborting frame during transmission");
+  end else begin
+    $error("Tx_AbortedSignal not assert after aborting frame during transmission");
+    ErrCntAssertions++;
+  end
+  
 
 endmodule
