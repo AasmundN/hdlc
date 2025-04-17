@@ -26,9 +26,28 @@ module assertions_hdlc (
   input  logic Tx_AbortedTrans,
   input  logic Tx_ValidFrame
 );
+  /*******************************************
+   * Local signals and error count           *
+   *******************************************/
+
+  logic Transmitting;
 
   initial begin
     ErrCntAssertions  =  0;
+    Transmitting = 0'b0;
+    
+    while (1) begin // create local signal to check weather we are transmitting or not
+      wait(Tx_ValidFrame);
+
+      Transmitting = 0'b1;
+
+      wait(!Tx_ValidFrame);
+
+      repeat(9) // give time to generate end/abort flag
+        @(posedge Clk);
+
+      Transmitting = 0'b0;
+    end
   end
 
   /*******************************************
@@ -60,7 +79,7 @@ module assertions_hdlc (
   RX_FlagDetect_Assert : assert property (RX_FlagDetect) begin
     $display("PASS: Flag detect");
   end else begin 
-    $error("Flag sequence did not generate FlagDetect"); 
+    $error("FAIL: Flag sequence did not generate FlagDetect"); 
     ErrCntAssertions++; 
   end
 
@@ -77,7 +96,7 @@ module assertions_hdlc (
   RX_AbortSignal_Assert : assert property (RX_AbortSignal) begin
     $display("PASS: Abort signal asserted after abort detected");
   end else begin 
-    $error("AbortSignal did not go high after AbortDetect during validframe"); 
+    $error("FAIL: AbortSignal did not go high after AbortDetect during validframe"); 
     ErrCntAssertions++; 
   end
 
@@ -95,7 +114,7 @@ module assertions_hdlc (
   Rx_AbortDetect_Assert : assert property (RX_AbortDetect) begin
     $display("PASS: Abort flag detected after received abort sequence");
   end else begin 
-    $error("Abort flag not detected after received abort sequence"); 
+    $error("FAIL: Abort flag not detected after received abort sequence"); 
     ErrCntAssertions++; 
   end
 
@@ -111,7 +130,7 @@ module assertions_hdlc (
   TX_AbortFrame_Assert : assert property (TX_AbortFrame) begin 
     $display("PASS: Abort flag generated on TX abort");
   end else begin
-    $error("Abort flag not generated on aborted TX frame");
+    $error("FAIL: Abort flag not generated on aborted TX frame");
     ErrCntAssertions++;
   end
 
@@ -127,7 +146,7 @@ module assertions_hdlc (
   TX_AbortedTrans_Assert : assert property (TX_AbortFrame) begin 
     $display("PASS: Tx_AbortedTrans asserted after aborting frame during transmission");
   end else begin
-    $error("Tx_AbortedTrans not assert after aborting frame during transmission");
+    $error("FAIL: Tx_AbortedTrans not assert after aborting frame during transmission");
     ErrCntAssertions++;
   end
   
@@ -137,13 +156,12 @@ module assertions_hdlc (
 
   property TX_IdlePattern;
     @(posedge Clk)
-    !Tx_ValidFrame |-> Flag_Sequence(Tx) or Tx;
+    !Transmitting |-> Tx;
   endproperty
 
-  TX_IdlePattern_Assert : assert property (TX_IdlePattern) begin 
-    $display("PASS: idle pattern generated on invalid TX frame");
-  end else begin
-    $error("idle pattern not generated on invalid TX frame");
+  TX_IdlePattern_Assert : assert property (TX_IdlePattern)
+  else begin
+    $error("FAIL: Idle pattern not generated when not transmitting");
     ErrCntAssertions++;
   end
 
