@@ -122,6 +122,16 @@ program testPr_hdlc(
     
   endtask
 
+  task VerifyFrameSizeReceive(logic [127:0][7:0] data, int Size);
+    logic [7:0] ReadData;
+
+    //Verify frame size
+    ReadAddress(Rx_Len, ReadData);
+    assert (ReadData == Size)
+      $display("PASS: Rx_frameSize equal the number of bytes received");
+      else $error("FAIL: Rx_frameSize does not equal the number of bytes received");
+
+  endtask
 
   task VerifyOverflowReceive(logic [127:0][7:0] data, int Size);
     logic [7:0] ReadData;
@@ -466,14 +476,18 @@ program testPr_hdlc(
 
     if(Abort)
       VerifyAbortReceive(ReceiveData, Size);
-    else if(Overflow)
+    else if(Overflow) begin
       VerifyOverflowReceive(ReceiveData, Size);
+      VerifyFrameSizeReceive(ReceiveData, Size);
+    end
     else if(FCSerr || NonByteAligned)
       VerifyErrorReceive(ReceiveData, Size);
     else if(Drop)
       VerifyDroppedReceive(ReceiveData, Size);
-    else if(!SkipRead)
+    else if(!SkipRead) begin
       VerifyNormalReceive(ReceiveData, Size);
+      VerifyFrameSizeReceive(ReceiveData, Size);
+    end
 
     #10000ns;
   endtask
