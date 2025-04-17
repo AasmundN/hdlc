@@ -476,15 +476,18 @@ program testPr_hdlc(
 
     if(Abort)
       VerifyAbortReceive(ReceiveData, Size);
-    else if(Overflow)
+    else if(Overflow) begin
       VerifyOverflowReceive(ReceiveData, Size);
+      VerifyFrameSizeReceive(ReceiveData, Size);
+    end
     else if(FCSerr || NonByteAligned)
       VerifyErrorReceive(ReceiveData, Size);
     else if(Drop)
       VerifyDroppedReceive(ReceiveData, Size);
-    else if(!SkipRead)
+    else if(!SkipRead) begin
       VerifyNormalReceive(ReceiveData, Size);
       VerifyFrameSizeReceive(ReceiveData, Size);
+    end
 
     #10000ns;
   endtask
