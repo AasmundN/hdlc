@@ -121,9 +121,9 @@ module assertions_hdlc (
   endproperty
 
   TX_AbortedTrans_Assert : assert property (TX_AbortFrame) begin 
-    $display("PASS: Tx_AbortedSignal asserted after aborting frame during transmission");
+    $display("PASS: Tx_AbortedTrans asserted after aborting frame during transmission");
   end else begin
-    $error("Tx_AbortedSignal not assert after aborting frame during transmission");
+    $error("Tx_AbortedTrans not assert after aborting frame during transmission");
     ErrCntAssertions++;
   end
   

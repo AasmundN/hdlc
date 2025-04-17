@@ -315,7 +315,7 @@ program testPr_hdlc(
 
     // TODO: insert immediate assertion tasks
 
-    #5000ns;
+    #10000ns;
   endtask
 
   task Receive(int Size, int Abort, int FCSerr, int NonByteAligned, int Overflow, int Drop, int SkipRead);
@@ -389,7 +389,7 @@ program testPr_hdlc(
     else if(!SkipRead)
       VerifyNormalReceive(ReceiveData, Size);
 
-    #5000ns;
+    #10000ns;
   endtask
 
   task GenerateFCSBytes(logic [127:0][7:0] data, int size, output logic[15:0] FCSBytes);
