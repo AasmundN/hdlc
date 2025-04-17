@@ -114,8 +114,7 @@ program testPr_hdlc(
     
   endtask
 
-  // VerifyNormalReceive should verify correct value in the Rx status/control
-  // register, and that the Rx data buffer contains correct data.
+
   task VerifyOverflowReceive(logic [127:0][7:0] data, int Size);
     logic [7:0] ReadData;
     wait(uin_hdlc.Rx_Ready);
@@ -364,50 +363,48 @@ program testPr_hdlc(
     ReceiveData[Size]   = FCSBytes[7:0];
     ReceiveData[Size+1] = FCSBytes[15:8];
 
-      //Enable FCS
-      if(!Overflow && !NonByteAligned)
-        WriteAddress(Rx_SC, 8'h20);
-      else
-        WriteAddress(Rx_SC, 8'h00);
+    //Enable FCS
+    if(!Overflow && !NonByteAligned)
+      WriteAddress(Rx_SC, 8'b1 << Rx_FCSen);
+    else
+      WriteAddress(Rx_SC, 8'h00);
 
-        //Generate stimulus
-        InsertFlagOrAbort(1);
+      //Generate stimulus
+      InsertFlagOrAbort(1);
 
-      if(FCSerr) begin
-        ReceiveData[Size-1] -= 1;
-      end
+    if(FCSerr) begin
+      ReceiveData[Size-1] -= 1;
+    end
 
-      MakeRxStimulus(ReceiveData, Size + 2);
-    
-      if(Overflow) begin
-        OverflowData[0] = 8'h44;
-        OverflowData[1] = 8'hBB;
-        OverflowData[2] = 8'hCC;
-        MakeRxStimulus(OverflowData, 3);
-      end
+    MakeRxStimulus(ReceiveData, Size + 2);
+  
+    if(Overflow) begin
+      OverflowData[0] = 8'h44;
+      OverflowData[1] = 8'hBB;
+      OverflowData[2] = 8'hCC;
+      MakeRxStimulus(OverflowData, 3);
+    end
 
-      if (NonByteAligned) begin
-        @(posedge uin_hdlc.Clk);
-        uin_hdlc.Rx = 0;
-      end
-
-      if(Abort) begin
-        InsertFlagOrAbort(0);
-      end else begin
-        InsertFlagOrAbort(1);
-      end
-
+    if (NonByteAligned) begin
       @(posedge uin_hdlc.Clk);
-      uin_hdlc.Rx = 1'b1;
+      uin_hdlc.Rx = 0;
+    end
 
-      if(Drop) begin //Only check scenario when frame is dropped after Rx_ready gone high
-        repeat(8)
-          @(posedge uin_hdlc.Clk);
-        WriteAddress(Rx_SC, 8'h02);
-      end
+    if(Abort) begin
+      InsertFlagOrAbort(0);
+    end else begin
+      InsertFlagOrAbort(1);
+    end
 
-      repeat(8)
-        @(posedge uin_hdlc.Clk);
+    @(posedge uin_hdlc.Clk);
+    uin_hdlc.Rx = 1'b1;
+
+    repeat(8)
+      @(posedge uin_hdlc.Clk);
+
+    if(Drop) begin //Only check scenario when frame is dropped after Rx_ready gone high
+      WriteAddress(Rx_SC, 8'b1 << Rx_Drop);
+    end
 
     if(Abort)
       VerifyAbortReceive(ReceiveData, Size);
