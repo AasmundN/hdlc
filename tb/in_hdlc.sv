@@ -56,5 +56,6 @@ interface in_hdlc ();
   logic       Tx_AbortedTrans;
   logic       Tx_Done;
   logic       Tx_ValidFrame;
+  logic       Tx_Enable;
 
 endinterface

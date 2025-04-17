@@ -24,7 +24,8 @@ module assertions_hdlc (
   input  logic Rx_WrBuff,
   input  logic Tx_AbortFrame,
   input  logic Tx_AbortedTrans,
-  input  logic Tx_ValidFrame
+  input  logic Tx_ValidFrame,
+  input  logic Tx_Enable
 );
   /*******************************************
    * Local signals and error count           *
@@ -195,9 +196,42 @@ module assertions_hdlc (
   endproperty
 
   TX_ZeroInsertion_Assert : assert property (TX_ZeroInsertion)
-  $display("Mog");
   else begin
     $error("FAIL: Zero not inserted after five consecutive ones");
+    ErrCntAssertions++;
+  end
+
+  /********************************************
+   * Verify Tx_ValidFrame                     *
+   ********************************************/
+
+  property TX_ValidFrameAssert;
+    @(posedge Clk)
+    // Tx_ValidFrame should always be asserted after Tx_Enable
+    // After Tx_ValidFrame is asserter there should always be generated a start flag
+    // unless the frame is aborted before transmission starts
+    disable iff (Tx_AbortFrame)
+    Tx_Enable |=> ##[0:$] Tx_ValidFrame ##1 Flag_Sequence(Tx);
+  endproperty
+
+  property TX_ValidFrameDeassert;
+    @(posedge Clk)
+    // The Tx_ValidFrame should always go low again after some time
+    // and when it goes low there should always be generated a flag
+    !Tx_ValidFrame ##1 Tx_ValidFrame |=> ##[0:$] !Tx_ValidFrame ##1 (Flag_Sequence(Tx) or Abort_Flag(Tx));
+  endproperty
+
+  TX_ValidFrameAssert_Assert : assert property (TX_ValidFrameAssert)
+    $display("Pass: Tx_ValidFrame asserted after Tx_Enable");
+  else begin
+    $error("FAIL: Tx_ValidFrame not asserted after Tx_Enable");
+    ErrCntAssertions++;
+  end
+
+  TX_ValidFrameDeassert_Assert : assert property (TX_ValidFrameDeassert)
+  $display("Pass: Tx_ValidFrame deasserted and end/abort flag generated");
+  else begin
+    $error("FAIL: Tx_ValidFrame not deasserted or end/abort flag not generated");
     ErrCntAssertions++;
   end
 

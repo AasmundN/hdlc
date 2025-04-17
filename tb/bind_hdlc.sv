@@ -20,7 +20,8 @@ module bind_hdlc ();
     .Rx_WrBuff        (uin_hdlc.Rx_WrBuff),
     .Tx_AbortFrame    (uin_hdlc.Tx_AbortFrame),
     .Tx_AbortedTrans  (uin_hdlc.Tx_AbortedTrans),
-    .Tx_ValidFrame    (uin_hdlc.Tx_ValidFrame)
+    .Tx_ValidFrame    (uin_hdlc.Tx_ValidFrame),
+    .Tx_Enable        (uin_hdlc.Tx_Enable)
   );
 
 endmodule
