@@ -43,14 +43,11 @@ module assertions_hdlc (
   initial begin // TransmittingFrame is asserted during frame transmition, including flags
     while (1) begin
       wait(Tx_ValidFrame);
-
       TransmittingFrame = 0'b1;
 
       wait(!Tx_ValidFrame);
-
       repeat(9) // give time to generate end/abort flag
         @(posedge Clk);
-
       TransmittingFrame = 0'b0;
     end
   end
@@ -58,14 +55,11 @@ module assertions_hdlc (
   initial begin // TransmittingFrameContent is assert during frame transmition, not including flags
     while (1) begin
       wait(Tx_ValidFrame);
-
       repeat(10) // give time to generate start flag
         @(posedge Clk);
-
       TransmittingFrameContent = 0'b1;
 
       wait(!Tx_ValidFrame);
-
       TransmittingFrameContent = 0'b0;
     end
   end
@@ -80,10 +74,6 @@ module assertions_hdlc (
 
   sequence Abort_Flag(signal);
     !signal ##1 signal[*7]; // abort flag is 1111_1110
-  endsequence
-
-  sequence Idle_Pattern(signal);
-    signal[*8]; // idle pattern is 1111_1111
   endsequence
 
   /*******************************************
@@ -208,7 +198,7 @@ module assertions_hdlc (
   property TX_ValidFrameAssert;
     @(posedge Clk)
     // Tx_ValidFrame should always be asserted after Tx_Enable
-    // After Tx_ValidFrame is asserter there should always be generated a start flag
+    // After Tx_ValidFrame is asserted there should always be generated a start flag
     // unless the frame is aborted before transmission starts
     disable iff (Tx_AbortFrame)
     Tx_Enable |=> ##[0:$] Tx_ValidFrame ##1 Flag_Sequence(Tx);
@@ -221,16 +211,16 @@ module assertions_hdlc (
     !Tx_ValidFrame ##1 Tx_ValidFrame |=> ##[0:$] !Tx_ValidFrame ##1 (Flag_Sequence(Tx) or Abort_Flag(Tx));
   endproperty
 
-  TX_ValidFrameAssert_Assert : assert property (TX_ValidFrameAssert)
+  TX_ValidFrameAssert_Assert : assert property (TX_ValidFrameAssert) begin
     $display("Pass: Tx_ValidFrame asserted after Tx_Enable");
-  else begin
+  end else begin
     $error("FAIL: Tx_ValidFrame not asserted after Tx_Enable");
     ErrCntAssertions++;
   end
 
-  TX_ValidFrameDeassert_Assert : assert property (TX_ValidFrameDeassert)
+  TX_ValidFrameDeassert_Assert : assert property (TX_ValidFrameDeassert) begin
   $display("Pass: Tx_ValidFrame deasserted and end/abort flag generated");
-  else begin
+  end else begin
     $error("FAIL: Tx_ValidFrame not deasserted or end/abort flag not generated");
     ErrCntAssertions++;
   end
