@@ -43,6 +43,10 @@ module assertions_hdlc (
     !signal ##1 signal[*7]; // abort flag is 1111_1110
   endsequence
 
+  sequence Idle_Pattern(signal);
+    signal[*8]; // idle pattern is 1111_1111
+  endsequence
+
   /*******************************************
    * Verify correct Rx_FlagDetect behavior   *
    *******************************************/
@@ -127,5 +131,20 @@ module assertions_hdlc (
     ErrCntAssertions++;
   end
   
+  /********************************************
+   * Verify idle pattern generation           *
+   ********************************************/
+
+  property TX_IdlePattern;
+    @(posedge Clk)
+    !Tx_ValidFrame |-> Flag_Sequence(Tx) or Tx;
+  endproperty
+
+  TX_IdlePattern_Assert : assert property (TX_IdlePattern) begin 
+    $display("PASS: idle pattern generated on invalid TX frame");
+  end else begin
+    $error("idle pattern not generated on invalid TX frame");
+    ErrCntAssertions++;
+  end
 
 endmodule
