@@ -65,25 +65,40 @@ program testPr_hdlc(
 
     assert (ReadData[Rx_Ready] == 0)
       $display("PASS: Rx_Buff has no data");
-      else $error("FAIL: Rx_Ready asserted in Rx_SC");
+      else begin 
+        $error("FAIL: Rx_Ready asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_FrameError] == 0)
       $display("PASS: No frame error");
-      else $error("FAIL: Rx_FrameError asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_FrameError asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_AbortSignal] == 1)
       $display("PASS: Abort signal asserted");
-      else $error("FAIL: Rx_Abortsignal not asserted in Rx_SC");
+      else begin 
+        $error("FAIL: Rx_Abortsignal not asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_Overflow] == 0)
       $display("PASS: No overflow signal");
-      else $error("FAIL: Rx_Overflow asserted in Rx_SC");
+      else begin 
+        $error("FAIL: Rx_Overflow asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     // check Rx buffer empty
     ReadAddress(Rx_Buff, ReadData);
     assert (ReadData == 0)
       $display("PASS: Rx_Buff is empty");
-      else $error("FAIL: Rx_Buff not empty on aborted frame");
+      else begin
+        $error("FAIL: Rx_Buff not empty on aborted frame");
+        TbErrorCnt++;
+      end
 
   endtask
 
@@ -98,26 +113,41 @@ program testPr_hdlc(
     
     assert (ReadData[Rx_Ready] == 1)
       $display("PASS: Rx_Buff has data to read");
-      else $error("FAIL: Rx_Ready not set in Rx_SC");
+      else begin
+        $error("FAIL: Rx_Ready not set in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_FrameError] == 0)
       $display("PASS: No frame error");
-      else $error("FAIL: Rx_FrameError asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_FrameError asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_AbortSignal] == 0)
       $display("PASS: No abort signal");
-      else $error("FAIL: Rx_AbortSignal asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_AbortSignal asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_Overflow] == 0)
       $display("PASS: No overflow signal");
-      else $error("FAIL: Rx_Overflow asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_Overflow asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     // Verify received data
     for (int i = 0; i < Size; i++) begin
       ReadAddress(Rx_Buff, ReadData);
       assert (ReadData == data[i])
         $display("PASS: Rx buff has correct data");
-        else $error("FAIL: Data mismatch on byte %d: got %b, expected %b", i, ReadData, data[i]);
+        else begin
+          $error("FAIL: Data mismatch on byte %d: got %b, expected %b", i, ReadData, data[i]);
+          TbErrorCnt++;
+        end
     end
     
   endtask
@@ -129,7 +159,10 @@ program testPr_hdlc(
     ReadAddress(Rx_Len, ReadData);
     assert (ReadData == Size)
       $display("PASS: Rx_frameSize equal the number of bytes received");
-      else $error("FAIL: Rx_frameSize does not equal the number of bytes received");
+      else begin
+        $error("FAIL: Rx_frameSize does not equal the number of bytes received");
+        TbErrorCnt++;
+      end
 
   endtask
 
@@ -142,26 +175,41 @@ program testPr_hdlc(
     
     assert (ReadData[Rx_Ready] == 1)
       $display("PASS: Rx_Buff has data to read");
-      else $error("FAIL: Rx_Ready not set in Rx_SC");
+      else begin
+        $error("FAIL: Rx_Ready not set in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_FrameError] == 0)
       $display("PASS: No frame error");
-      else $error("FAIL: Rx_FrameError asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_FrameError asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_AbortSignal] == 0)
       $display("PASS: No abort signal");
-      else $error("FAIL: Rx_AbortSignal asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_AbortSignal asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_Overflow] == 1)
       $display("PASS: Overflow signal asserted");
-      else $error("FAIL: Rx_Overflow not asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_Overflow not asserted in Rx_SC");
+        TbErrorCnt++;
+      end
   
     // Verify received data
     for (int i = 0; i < Size; i++) begin
       ReadAddress(Rx_Buff, ReadData);
       assert (ReadData == data[i])
         $display("PASS: Rx buff has correct data");
-        else $error("FAIL: Data mismatch on byte %d: got %b, expected %b", i, ReadData, data[i]);
+        else begin
+          $error("FAIL: Data mismatch on byte %d: got %b, expected %b", i, ReadData, data[i]);
+          TbErrorCnt++;
+        end
     end
   endtask
 
@@ -173,25 +221,40 @@ program testPr_hdlc(
 
     assert (ReadData[Rx_Ready] == 0)
       $display("PASS: Rx_Buff has no data");
-      else $error("FAIL: Rx_Ready asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_Ready asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_FrameError] == 1)
       $display("PASS: Frame error detected");
-      else $error("FAIL: Rx_FrameError not asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_FrameError not asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_AbortSignal] == 0)
       $display("PASS: No abort signal");
-      else $error("FAIL: Rx_AbortSignal asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_AbortSignal asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_Overflow] == 0)
       $display("PASS: No overflow signal");
-      else $error("FAIL: Rx_Overflow asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_Overflow asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     // check Rx buffer empty
     ReadAddress(Rx_Buff, ReadData);
     assert (ReadData == 0)
       $display("PASS: Rx_Buff is empty");
-      else $error("FAIL: Rx_Buff not empty on error frame");
+      else begin
+        $error("FAIL: Rx_Buff not empty on error frame");
+        TbErrorCnt++;
+      end
   endtask
 
   task VerifyDroppedReceive(logic [127:0][7:0] data, int Size);
@@ -202,25 +265,40 @@ program testPr_hdlc(
 
     assert (ReadData[Rx_Ready] == 0)
       $display("PASS: Rx_Buff has no data");
-      else $error("FAIL: Rx_Ready asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_Ready asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_FrameError] == 0)
       $display("PASS: No frame error");
-      else $error("FAIL: Rx_FrameError asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_FrameError asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_AbortSignal] == 0)
       $display("PASS: No abort signal");
-      else $error("FAIL: Rx_AbortSignal asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_AbortSignal asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     assert (ReadData[Rx_Overflow] == 0)
       $display("PASS: No overflow signal");
-      else $error("FAIL: Rx_Overflow asserted in Rx_SC");
+      else begin
+        $error("FAIL: Rx_Overflow asserted in Rx_SC");
+        TbErrorCnt++;
+      end
 
     // check Rx buffer empty
     ReadAddress(Rx_Buff, ReadData);
     assert (ReadData == 0)
       $display("PASS: Rx_Buff is empty after dropped frame");
-      else $error("FAIL: Rx_Buff not empty on dropped frame");
+      else begin
+        $error("FAIL: Rx_Buff not empty on dropped frame");
+        TbErrorCnt++;
+      end
   endtask
 
   /****************************************************************************
