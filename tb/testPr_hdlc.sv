@@ -46,6 +46,14 @@ program testPr_hdlc(
     Rx_Overflow,
     Rx_FCSen
   } RxSC_bits;
+
+  enum int {        
+    Tx_Done,
+    Tx_Enable,
+    Tx_AbortFrame,
+    Tx_AbortedTrans,
+    Tx_Full
+  } TxSC_bits;
   
   // VerifyAbortReceive should verify correct value in the Rx status/control
   // register, and that the Rx data buffer is zero after abort.
@@ -154,6 +162,11 @@ program testPr_hdlc(
 
     Init();
 
+    //Transmit: Size, Abort, Overflow
+    Transmit( 10, 0, 0);            //Normal
+    Transmit(126, 0, 1);            //Overflow
+    Transmit( 42, 1, 0);            //Abort
+
     //Receive: Size, Abort, FCSerr, NonByteAligned, Overflow, Drop, SkipRead
     Receive( 10, 0, 0, 0, 0, 0, 0); //Normal
     Receive( 40, 1, 0, 0, 0, 0, 0); //Abort
@@ -260,6 +273,51 @@ program testPr_hdlc(
     end
   endtask
 
+  task Transmit(int Size, int Abort, int Overflow);
+    logic [125:0][7:0] TransmitData;
+    logic        [7:0] TxStatus;
+
+    string msg;
+    if(Abort)
+      msg = "- Abort";
+    else if(Overflow)
+      msg = "- Overflow";
+    else
+      msg = "- Normal";
+    $display("*************************************************************");
+    $display("%t - Starting task Transmit %s", $time, msg);
+    $display("*************************************************************");
+
+    do begin // wait for TX module ready
+      ReadAddress(Tx_SC, TxStatus);
+    end while (!TxStatus[Tx_Done]);
+
+    // write data to TX buffer
+    for (int i = 0; i < Size; i++) begin
+      TransmitData[i] = $urandom;
+      WriteAddress(Tx_Buff, TransmitData[i]);
+    end
+
+    if (Overflow) // write overflow data
+      WriteAddress(Tx_Buff, $urandom);
+
+    WriteAddress(Tx_SC, 8'b1 << Tx_Enable);
+
+    // wait for CRC calculation to finish
+    wait(!uin_hdlc.Tx);
+
+    if (Abort) begin
+      repeat(16) // give time to generate start flag and one data byte
+        @(posedge uin_hdlc.Clk);
+
+      WriteAddress(Tx_SC, 8'b1 << Tx_AbortFrame);
+    end
+
+    // TODO: insert immediate assertion tasks
+
+    #10000ns;
+  endtask
+
   task Receive(int Size, int Abort, int FCSerr, int NonByteAligned, int Overflow, int Drop, int SkipRead);
     logic [127:0][7:0] ReceiveData;
     logic       [15:0] FCSBytes;
@@ -331,7 +389,7 @@ program testPr_hdlc(
     else if(!SkipRead)
       VerifyNormalReceive(ReceiveData, Size);
 
-    #5000ns;
+    #10000ns;
   endtask
 
   task GenerateFCSBytes(logic [127:0][7:0] data, int size, output logic[15:0] FCSBytes);
