@@ -303,6 +303,7 @@ program testPr_hdlc(
   task VerifyNormalTransmit(logic [125:0][7:0] buffData, logic [129:0][7:0] transData, int Size);
     logic [127:0][7:0] FCSdata;
     logic [15:0]       FCSBytes;
+    logic [7:0]        ReadData;
 
     //Verify startFlag
     assert(transData[0] == 8'b01111110)
@@ -316,6 +317,7 @@ program testPr_hdlc(
     for(int i = 0; i < Size; i++) begin
       assert(buffData[i] == transData[i+1])
         $display("PASS: Data transmitted is the same as the data sent to the buffer");
+        //$display("Trans: %08b | Buff: %08b", transData[i+1], buffData[i]);
         else begin
           $error("FAIL: Data transmitted is not the same as the data sent to the buffer");
           TbErrorCnt++;
@@ -329,9 +331,6 @@ program testPr_hdlc(
 
     GenerateFCSBytes(FCSdata, Size, FCSBytes);
     
-    //Verify EndFlag
-
-    
     assert((transData[Size+1] == FCSBytes[7:0]) && (transData[Size+2] == FCSBytes[15:8]))
       $display("Pass: CRCbytes are correctly calculated");
       else begin
@@ -344,6 +343,43 @@ program testPr_hdlc(
       $display("PASS: endFlag transmitted");
       else begin
         $error("FAIL: endFlag not transmitted");
+        TbErrorCnt++;
+      end
+
+    //Verify status regiser
+    ReadAddress(Tx_SC, ReadData);
+
+    assert (ReadData[Tx_Full] == 0)
+      $display("PASS: Tx buffer is not full after transmission");
+      else begin
+        $error("FAIL: Tx buffer is full");
+        TbErrorCnt++;
+      end
+
+    assert (ReadData[Tx_AbortedTrans] == 0)
+      $display("PASS: No aborted transmission");
+      else begin
+        $error("FAIL: Transmission aborted");
+        TbErrorCnt++;
+      end
+
+    assert (ReadData[Tx_Done] == 1)
+      $display("PASS: Transmission is done");
+      else begin
+        $error("FAIL: Transmission is not done");
+        TbErrorCnt++;
+      end
+
+  endtask
+
+  task VerifyFullBuffer();
+    logic [7:0] readData;
+    
+    ReadAddress(Tx_SC, readData);
+    assert (readData[Tx_Full] == 1)
+      $display("PASS: Buffer is full");
+      else begin 
+        $error("FAIL: Buffer is not full");
         TbErrorCnt++;
       end
   endtask
@@ -362,7 +398,7 @@ program testPr_hdlc(
     Init();
 
     //Transmit: Size, Abort, Overflow
-    Transmit( 10, 0, 0);            //Normal
+    Transmit( 25, 0, 0);            //Normal
     Transmit(126, 0, 1);            //Overflow
     //Transmit( 42, 1, 0);            //Abort
 
@@ -486,6 +522,7 @@ program testPr_hdlc(
 
     for(int i = 0; i < Size+4; i++) begin
       for(int j = 0; j < 8; j++) begin
+        //$display(uin_hdlc.Tx, "\t", cntOnes, "\t", j);
         if(cntOnes == 5 && uin_hdlc.Tx == '0) begin
           cntOnes = 0;
           j -= 1;
@@ -495,12 +532,11 @@ program testPr_hdlc(
             cntOnes++;
           else
             cntOnes = 0;
-          end   
           TransmittedData[i][j] = uin_hdlc.Tx;
-          @(posedge uin_hdlc.Clk);   
+          @(posedge uin_hdlc.Clk); 
+        end   
       end
     end
-
 
   endtask
 
@@ -527,12 +563,14 @@ program testPr_hdlc(
     // write data to TX buffer
     for (int i = 0; i < Size; i++) begin
       TransmitData[i] = $urandom;
+      //TransmitData[i] = 8'b00011111;
       WriteAddress(Tx_Buff, TransmitData[i]);
     end
 
-    if (Overflow) // write overflow data
+    if (Overflow) begin // write overflow data
       WriteAddress(Tx_Buff, $urandom);
-      // TODO: Verify Tx_full here
+      VerifyFullBuffer();
+    end
 
     WriteAddress(Tx_SC, 8'b1 << Tx_Enable);
 
@@ -542,7 +580,7 @@ program testPr_hdlc(
     if (Abort) begin
       repeat(16) // give time to generate start flag and one data byte
         @(posedge uin_hdlc.Clk);
-        //Add random delay
+        // TODO: Add random delay
 
       WriteAddress(Tx_SC, 8'b1 << Tx_AbortFrame);
     end else begin
@@ -550,7 +588,7 @@ program testPr_hdlc(
     end
 
     // TODO: insert immediate assertion tasks
-    if (!Abort && !Overflow) begin
+    if (!Abort) begin
       VerifyNormalTransmit(TransmitData, TransmittedData, Size);
     end
 
