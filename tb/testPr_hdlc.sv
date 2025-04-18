@@ -384,6 +384,42 @@ program testPr_hdlc(
       end
   endtask
 
+  task VerifyAbortedTransmit(logic [129:0][7:0] TransData);
+    logic [7:0] ReadData;
+
+    //Verify startFlag
+    assert(TransData[0] == 8'b01111110)
+      $display("PASS: startFlag transmitted");
+      else begin
+        $error("FAIL: startFlag not transmitted");
+        TbErrorCnt++;
+      end
+
+    //Verify status reg
+    ReadAddress(Tx_SC, ReadData);
+
+    assert (ReadData[Tx_Full] == 0)
+      $display("PASS: Tx buffer is not full when abort");
+      else begin
+        $error("FAIL: Tx buffer is full");
+        TbErrorCnt++;
+      end
+
+    assert (ReadData[Tx_AbortedTrans] == 1)
+      $display("PASS: Transmission is aborted");
+      else begin
+        $error("FAIL: Transmission is not aborted");
+        TbErrorCnt++;
+      end
+
+    assert (ReadData[Tx_Done] == 1)
+      $display("PASS: Transmission is done after abortion");
+      else begin
+        $error("FAIL: Transmission is not done after abortion");
+        TbErrorCnt++;
+      end
+  endtask
+
   /****************************************************************************
    *                                                                          *
    *                             Simulation code                              *
@@ -400,7 +436,12 @@ program testPr_hdlc(
     //Transmit: Size, Abort, Overflow
     Transmit( 25, 0, 0);            //Normal
     Transmit(126, 0, 1);            //Overflow
-    //Transmit( 42, 1, 0);            //Abort
+    Transmit( 48, 0, 0);            //Normal
+    Transmit( 102, 0, 0);           //Normal
+    Transmit( 42, 1, 0);            //Abort
+    Transmit( 3, 0, 0);             //Normal
+    Transmit( 32, 0, 0);            //Normal
+    //Transmit( 12, 1, 0);             //Abort //Abort after a abort results in errors with the status register
 
     //Receive: Size, Abort, FCSerr, NonByteAligned, Overflow, Drop, SkipRead
     /*
@@ -431,7 +472,7 @@ program testPr_hdlc(
     $display("*************************************");
     $display("*                                   *");
     $display("*     Total Assertion Errors: %0d     *", TbErrorCnt + uin_hdlc.ErrCntAssertions);
-    $display("*    Immediate: %0d  Concurrent: %0b    *", TbErrorCnt, uin_hdlc.ErrCntAssertions);
+    $display("*    Immediate: %0d  Concurrent: %0d    *", TbErrorCnt, uin_hdlc.ErrCntAssertions);
     $display("*                                   *");
     $display("*************************************");
 
@@ -541,9 +582,10 @@ program testPr_hdlc(
   endtask
 
   task Transmit(int Size, int Abort, int Overflow);
-    logic [125:0][7:0] TransmitData;
+    logic [125:0][7:0] BuffData;
     logic        [7:0] TxStatus;
     logic [129:0][7:0] TransmittedData; //Max transmitted: 126 byte payload + 2 byte CRC + 2 byte flags (start + end/aborted)
+    int CyclesBeforeAbort;
 
     string msg;
     if(Abort)
@@ -562,9 +604,9 @@ program testPr_hdlc(
 
     // write data to TX buffer
     for (int i = 0; i < Size; i++) begin
-      TransmitData[i] = $urandom;
-      //TransmitData[i] = 8'b00011111;
-      WriteAddress(Tx_Buff, TransmitData[i]);
+      BuffData[i] = $urandom;
+      //BuffData[i] = 8'b00011111;
+      WriteAddress(Tx_Buff, BuffData[i]);
     end
 
     if (Overflow) begin // write overflow data
@@ -578,18 +620,27 @@ program testPr_hdlc(
     wait(!uin_hdlc.Tx);
 
     if (Abort) begin
-      repeat(16) // give time to generate start flag and one data byte
+      CyclesBeforeAbort = $urandom%(Size*8);
+      // give time to generate start flag and at least one data byte
+      CollectTransmission(TransmittedData, CyclesBeforeAbort/8);
+      repeat(8+CyclesBeforeAbort) 
         @(posedge uin_hdlc.Clk);
-        // TODO: Add random delay
 
+      // abort frame:
       WriteAddress(Tx_SC, 8'b1 << Tx_AbortFrame);
     end else begin
       CollectTransmission(TransmittedData, Size);
     end
 
     // TODO: insert immediate assertion tasks
-    if (!Abort) begin
-      VerifyNormalTransmit(TransmitData, TransmittedData, Size);
+    if (Abort) begin
+      //Wait for system to update after abort
+      repeat(30)
+        @(posedge uin_hdlc.Clk);
+
+      VerifyAbortedTransmit(TransmittedData);
+    end else begin
+      VerifyNormalTransmit(BuffData, TransmittedData, Size);
     end
 
     #10000ns;
