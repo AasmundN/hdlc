@@ -346,7 +346,7 @@ program testPr_hdlc(
     $display("*************************************");
     $display("*                                   *");
     $display("*     Total Assertion Errors: %0d     *", TbErrorCnt + uin_hdlc.ErrCntAssertions);
-    $display("*    Immediate: %0d  Concurrent: %0b    *", TbErrorCnt, uin_hdlc.ErrCntAssertions);
+    $display("*    Immediate: %0d  Concurrent: %0d    *", TbErrorCnt, uin_hdlc.ErrCntAssertions);
     $display("*                                   *");
     $display("*************************************");
 
