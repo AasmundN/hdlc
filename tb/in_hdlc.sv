@@ -50,6 +50,7 @@ interface in_hdlc ();
   logic       Rx_StopFCS;
   logic       RxD;
   logic       ZeroDetect;
+  logic [7:0] Rx_SC;
 
   // Tx
   logic       Tx_AbortFrame;
@@ -59,5 +60,6 @@ interface in_hdlc ();
   logic       Tx_Enable;
   logic [7:0] Tx_FrameSize;
   logic [7:0] Tx_BufferCount;
+  logic [7:0] Tx_SC;
 
 endinterface
