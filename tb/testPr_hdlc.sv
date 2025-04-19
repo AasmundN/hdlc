@@ -458,7 +458,6 @@ program testPr_hdlc(
     Receive( 42, 0, 0, 0, 0, 1, 0); //FrameDropped
     Receive(  6, 0, 0, 0, 0, 0, 0); //Normal
     Receive( 33, 0, 0, 1, 0, 0, 0); //FrameError NonByteAligned
-    
 
     $display("*************************************************************");
     $display("%t - Finishing Test Program", $time);
