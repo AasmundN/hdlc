@@ -22,6 +22,7 @@ module assertions_hdlc (
   input  logic Rx_AbortSignal,
   input  logic Rx_Overflow,
   input  logic Rx_WrBuff,
+  input  logic Rx_EoF,
   input  logic Tx_AbortFrame,
   input  logic Tx_AbortedTrans,
   input  logic Tx_ValidFrame,
@@ -77,7 +78,7 @@ module assertions_hdlc (
   endsequence
 
   /*******************************************
-   * Verify correct Rx_FlagDetect behavior   *
+   * Verify correct Rx_FlagDetect behaviour   *
    *******************************************/
 
   // Check if flag sequence is detected
@@ -94,7 +95,7 @@ module assertions_hdlc (
   end
 
   /********************************************
-   * Verify correct Rx_AbortSignal behavior   *
+   * Verify correct Rx_AbortSignal behaviour   *
    ********************************************/
 
   //If abort is detected during valid frame. then abort signal should go high
@@ -125,6 +126,26 @@ module assertions_hdlc (
     $display("PASS: Abort flag detected after received abort sequence");
   end else begin 
     $error("FAIL: Abort flag not detected after received abort sequence"); 
+    ErrCntAssertions++; 
+  end
+
+  /*******************************************
+   * Verify correct Rx_EoF behaviour         *
+   *******************************************/
+
+  sequence EoF;
+    (Flag_Sequence(Rx) or Abort_Flag(Rx)) ##0 Rx_ValidFrame;
+  endsequence
+
+  property RX_EoF;
+    @(posedge Clk)
+    EoF |=> ##[0:$] Rx_EoF;
+  endproperty
+
+  RX_EoF_Assert : assert property (RX_EoF) begin
+    $display("PASS: Rx_EoF asserted after whole frame received");
+  end else begin 
+    $error("FAIL: Rx_EoF not asserted after whole frame received"); 
     ErrCntAssertions++; 
   end
 
