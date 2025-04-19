@@ -563,7 +563,6 @@ program testPr_hdlc(
 
     for(int i = 0; i < Size+4; i++) begin
       for(int j = 0; j < 8; j++) begin
-        //$display(uin_hdlc.Tx, "\t", cntOnes, "\t", j);
         if(cntOnes == 5 && uin_hdlc.Tx == '0) begin
           cntOnes = 0;
           j -= 1;
@@ -620,9 +619,10 @@ program testPr_hdlc(
 
     if (Abort) begin
       CyclesBeforeAbort = $urandom%(Size*8-8);
-      // give time to generate start flag and at least one data byte
+      // give time to generate start flag and a random amount of bytes before aborting
       CollectTransmission(TransmittedData, 1);
-
+      repeat(CyclesBeforeAbort)
+        @(posedge uin_hdlc.Clk);
       // abort frame:
       WriteAddress(Tx_SC, 8'b1 << Tx_AbortFrame);
     end else begin
@@ -630,14 +630,12 @@ program testPr_hdlc(
       CollectTransmission(TransmittedData, Size);
     end
 
-    $display("TX done");
-
     repeat(16)
       @(posedge uin_hdlc.Clk);
 
     if (Abort) begin
       //Wait for system to update after abort
-      repeat(30)
+      repeat(20)
         @(posedge uin_hdlc.Clk);
 
       VerifyAbortedTransmit(TransmittedData);
