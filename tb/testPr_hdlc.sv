@@ -466,7 +466,7 @@ program testPr_hdlc(
     $display("*************************************************************");
     $stop;
   end
-
+  
   final begin
 
     $display("*************************************");
@@ -630,6 +630,11 @@ program testPr_hdlc(
       CollectTransmission(TransmittedData, Size);
     end
 
+    wait(!uin_hdlc.Tx_Done); // wait for transmition completion
+
+    repeat(16)
+      @(posedge uin_hdlc.Clk);
+
     // TODO: insert immediate assertion tasks
     if (Abort) begin
       //Wait for system to update after abort
@@ -641,7 +646,7 @@ program testPr_hdlc(
       VerifyNormalTransmit(BuffData, TransmittedData, Size);
     end
 
-    #10000ns;
+    #1000000ns; // make sure all concurrent assertions finish
   endtask
 
   task Receive(int Size, int Abort, int FCSerr, int NonByteAligned, int Overflow, int Drop, int SkipRead);

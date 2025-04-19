@@ -39,7 +39,10 @@ module test_hdlc ();
   assign uin_hdlc.ZeroDetect         = u_dut.u_RxChannel.ZeroDetect;
   assign uin_hdlc.Tx_AbortFrame      = u_dut.Tx_AbortFrame;
   assign uin_hdlc.Tx_AbortedTrans    = u_dut.Tx_AbortedTrans;
-  assign uin_hdlc.Tx_ValidFrame    = u_dut.Tx_ValidFrame;
+  assign uin_hdlc.Tx_ValidFrame      = u_dut.Tx_ValidFrame;
+  assign uin_hdlc.Tx_Enable          = u_dut.Tx_Enable;
+  assign uin_hdlc.Tx_FrameSize       = u_dut.Tx_FrameSize;
+  assign uin_hdlc.Tx_BufferCount     = u_dut.u_TxBuff.Count;
 
   //Clock
   always #250ns uin_hdlc.Clk = ~uin_hdlc.Clk;

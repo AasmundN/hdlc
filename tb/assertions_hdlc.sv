@@ -11,24 +11,60 @@
 */
 
 module assertions_hdlc (
-  output int   ErrCntAssertions,
-  input  logic Clk,
-  input  logic Rst,
-  input  logic Rx,
-  input  logic Tx,
-  input  logic Rx_FlagDetect,
-  input  logic Rx_ValidFrame,
-  input  logic Rx_AbortDetect,
-  input  logic Rx_AbortSignal,
-  input  logic Rx_Overflow,
-  input  logic Rx_WrBuff,
-  input  logic Tx_AbortFrame,
-  input  logic Tx_AbortedTrans,
-  input  logic Tx_ValidFrame
+  output int         ErrCntAssertions,
+  input  logic       Clk,
+  input  logic       Rst,
+  input  logic       Rx,
+  input  logic       Tx,
+  input  logic       Rx_FlagDetect,
+  input  logic       Rx_ValidFrame,
+  input  logic       Rx_AbortDetect,
+  input  logic       Rx_AbortSignal,
+  input  logic       Rx_Overflow,
+  input  logic       Rx_WrBuff,
+  input  logic       Tx_AbortFrame,
+  input  logic       Tx_AbortedTrans,
+  input  logic       Tx_ValidFrame,
+  input  logic       Tx_Enable,
+  input  logic [7:0] Tx_FrameSize,
+  input  logic [7:0] Tx_BufferCount,
+  input  logic       Tx_Done
 );
+  /*******************************************
+   * Local signals and error count           *
+   *******************************************/
+
+  logic TransmittingFrame;
+  logic TransmittingFrameContent;
 
   initial begin
-    ErrCntAssertions  =  0;
+    ErrCntAssertions         =  0;
+    TransmittingFrame        = '0;
+    TransmittingFrameContent = '0;
+  end
+
+  initial begin // TransmittingFrame is asserted during frame transmition, including flags
+    while (1) begin
+      wait(Tx_ValidFrame);
+      TransmittingFrame = 0'b1;
+
+      wait(!Tx_ValidFrame);
+      repeat(9) // give time to generate end/abort flag
+        @(posedge Clk);
+      TransmittingFrame = 0'b0;
+    end
+  end
+
+  initial begin // TransmittingFrameContent is assert during frame transmition, not including flags
+    while (1) begin
+      wait(Tx_ValidFrame);
+      repeat(10) // give time to generate start flag
+        @(posedge Clk);
+      TransmittingFrameContent = 0'b1;
+
+      wait(!Tx_ValidFrame);
+      TransmittingFrameContent = 0'b0;
+    end
   end
 
   /*******************************************
@@ -44,7 +80,7 @@ module assertions_hdlc (
   endsequence
 
   /*******************************************
-   * Verify correct Rx_FlagDetect behavior   *
+   * Verify correct Rx_FlagDetect behaviour   *
    *******************************************/
 
   // Check if flag sequence is detected
@@ -56,12 +92,12 @@ module assertions_hdlc (
   RX_FlagDetect_Assert : assert property (RX_FlagDetect) begin
     $display("PASS: Flag detect");
   end else begin 
-    $error("Flag sequence did not generate FlagDetect"); 
+    $error("FAIL: Flag sequence did not generate FlagDetect"); 
     ErrCntAssertions++; 
   end
 
   /********************************************
-   * Verify correct Rx_AbortSignal behavior   *
+   * Verify correct Rx_AbortSignal behaviour   *
    ********************************************/
 
   //If abort is detected during valid frame. then abort signal should go high
@@ -73,7 +109,7 @@ module assertions_hdlc (
   RX_AbortSignal_Assert : assert property (RX_AbortSignal) begin
     $display("PASS: Abort signal asserted after abort detected");
   end else begin 
-    $error("AbortSignal did not go high after AbortDetect during validframe"); 
+    $error("FAIL: AbortSignal did not go high after AbortDetect during validframe"); 
     ErrCntAssertions++; 
   end
 
@@ -91,7 +127,27 @@ module assertions_hdlc (
   Rx_AbortDetect_Assert : assert property (RX_AbortDetect) begin
     $display("PASS: Abort flag detected after received abort sequence");
   end else begin 
-    $error("Abort flag not detected after received abort sequence"); 
+    $error("FAIL: Abort flag not detected after received abort sequence"); 
+    ErrCntAssertions++; 
+  end
+
+  /*******************************************
+   * Verify correct Rx_EoF behaviour         *
+   *******************************************/
+
+  sequence EoF;
+    (Flag_Sequence(Rx) or Abort_Flag(Rx)) ##0 Rx_ValidFrame;
+  endsequence
+
+  property RX_EoF;
+    @(posedge Clk)
+    EoF |=> ##[0:$] Rx_EoF;
+  endproperty
+
+  RX_EoF_Assert : assert property (RX_EoF) begin
+    $display("PASS: Rx_EoF asserted after whole frame received");
+  end else begin 
+    $error("FAIL: Rx_EoF not asserted after whole frame received"); 
     ErrCntAssertions++; 
   end
 
@@ -107,7 +163,7 @@ module assertions_hdlc (
   TX_AbortFrame_Assert : assert property (TX_AbortFrame) begin 
     $display("PASS: Abort flag generated on TX abort");
   end else begin
-    $error("Abort flag not generated on aborted TX frame");
+    $error("FAIL: Abort flag not generated on aborted TX frame");
     ErrCntAssertions++;
   end
 
@@ -123,9 +179,89 @@ module assertions_hdlc (
   TX_AbortedTrans_Assert : assert property (TX_AbortFrame) begin 
     $display("PASS: Tx_AbortedTrans asserted after aborting frame during transmission");
   end else begin
-    $error("Tx_AbortedTrans not assert after aborting frame during transmission");
+    $error("FAIL: Tx_AbortedTrans not assert after aborting frame during transmission");
     ErrCntAssertions++;
   end
   
+  /********************************************
+   * Verify idle pattern generation           *
+   ********************************************/
+
+  property TX_IdlePattern;
+    @(posedge Clk)
+    !TransmittingFrame |-> Tx;
+  endproperty
+
+  TX_IdlePattern_Assert : assert property (TX_IdlePattern)
+  else begin
+    $error("FAIL: Idle pattern not generated when not transmitting");
+    ErrCntAssertions++;
+  end
+
+  /********************************************
+   * Verify zero insertion                    *
+   ********************************************/
+
+  property TX_ZeroInsertion;
+    @(posedge Clk)
+    disable iff (!TransmittingFrameContent)
+    Tx[*5] |=> !Tx;
+  endproperty
+
+  TX_ZeroInsertion_Assert : assert property (TX_ZeroInsertion)
+  else begin
+    $error("FAIL: Zero not inserted after five consecutive ones");
+    ErrCntAssertions++;
+  end
+
+  /********************************************
+   * Verify Tx_Done on emptied TX buffer      *
+   ********************************************/
+
+  property TX_Done;
+    @(posedge Clk)
+    TransmittingFrame && (Tx_BufferCount == Tx_FrameSize - 1) |-> Tx_Done;  
+  endproperty
+
+  TX_Done_Assert : assert property (TX_Done)
+    $display("PASS: Tx_Done asserted after emptied TX buffer");
+  else begin
+    $error("FAIL: Tx_Done not asserted after emptied TX buffer");
+    ErrCntAssertions++;
+  end
+
+  /********************************************
+   * Verify Tx_ValidFrame                     *
+   ********************************************/
+
+  property TX_ValidFrameAssert;
+    @(posedge Clk)
+    // Tx_ValidFrame should always be asserted after Tx_Enable
+    // After Tx_ValidFrame is asserted there should always be generated a start flag
+    // unless the frame is aborted before transmission starts
+    disable iff (Tx_AbortFrame)
+    Tx_Enable |=> ##[0:$] Tx_ValidFrame ##1 Flag_Sequence(Tx);
+  endproperty
+
+  property TX_ValidFrameDeassert;
+    @(posedge Clk)
+    // The Tx_ValidFrame should always go low again after some time
+    // and when it goes low there should always be generated a flag
+    !Tx_ValidFrame ##1 Tx_ValidFrame |=> ##[0:$] !Tx_ValidFrame ##1 (Flag_Sequence(Tx) or Abort_Flag(Tx));
+  endproperty
+
+  TX_ValidFrameAssert_Assert : assert property (TX_ValidFrameAssert) begin
+    $display("Pass: Tx_ValidFrame asserted after Tx_Enable");
+  end else begin
+    $error("FAIL: Tx_ValidFrame not asserted after Tx_Enable");
+    ErrCntAssertions++;
+  end
+
+  TX_ValidFrameDeassert_Assert : assert property (TX_ValidFrameDeassert) begin
+  $display("Pass: Tx_ValidFrame deasserted and end/abort flag generated");
+  end else begin
+    $error("FAIL: Tx_ValidFrame not deasserted or end/abort flag not generated");
+    ErrCntAssertions++;
+  end
 
 endmodule
