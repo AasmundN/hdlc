@@ -99,7 +99,6 @@ program testPr_hdlc(
         $error("FAIL: Rx_Buff not empty on aborted frame");
         TbErrorCnt++;
       end
-
   endtask
 
   // VerifyNormalReceive should verify correct value in the Rx status/control
@@ -149,7 +148,6 @@ program testPr_hdlc(
           TbErrorCnt++;
         end
     end
-    
   endtask
 
   task VerifyFrameSizeReceive(logic [127:0][7:0] data, int Size);
@@ -426,13 +424,26 @@ program testPr_hdlc(
    ****************************************************************************/
 
   initial begin
+    logic [6:0] receive_conf;
+    logic [2:0] transmit_conf;
+    int Rpcks;
+    int Tpcks;
+    int numRec;
+    int numTrans;
+
     $display("*************************************************************");
     $display("%t - Starting Test Program", $time);
     $display("*************************************************************");
 
     Init();
 
+    //Define number of transmissions and receives
+    numTrans = 5;
+    numRec   = 10;
+    
+
     //Transmit: Size, Abort, Overflow
+    //Test some general cases
     Transmit( 25, 0, 0);            //Normal
     Transmit(126, 0, 1);            //Overflow
     Transmit( 48, 0, 0);            //Normal
@@ -441,23 +452,43 @@ program testPr_hdlc(
     Transmit( 3, 0, 0);             //Normal
     Transmit( 32, 0, 0);            //Normal
     Transmit( 12, 1, 0);             //Abort
+
+    //Test some random cases
+    for(int j = 0; j < numTrans; j++)begin
+      transmit_conf = '0;
+      transmit_conf[$urandom%3] = 1;
+      if(transmit_conf[0] == 1) //Overflow
+        Tpcks = 126;
+      else
+        Tpcks = $urandom%126;
+      Transmit( Tpcks, transmit_conf[1], transmit_conf[0]);
+    end
     
     //Receive: Size, Abort, FCSerr, NonByteAligned, Overflow, Drop, SkipRead
-    
+    //General cases
     Receive( 10, 0, 0, 0, 0, 0, 0); //Normal
     Receive( 40, 1, 0, 0, 0, 0, 0); //Abort
     Receive(126, 0, 0, 0, 1, 0, 0); //Overflow
-    Receive( 45, 0, 0, 0, 0, 0, 0); //Normal
     Receive(126, 0, 0, 0, 0, 0, 0); //Normal
     Receive(122, 1, 0, 0, 0, 0, 0); //Abort
     Receive(126, 0, 0, 0, 1, 0, 0); //Overflow
     Receive( 25, 0, 0, 0, 0, 0, 0); //Normal
-    Receive( 47, 0, 0, 0, 0, 0, 0); //Normal
     Receive( 23, 0, 1, 0, 0, 0, 0); //FrameError FCSerr
     Receive(  5, 0, 0, 0, 0, 0, 0); //Normal
     Receive( 42, 0, 0, 0, 0, 1, 0); //FrameDropped
     Receive(  6, 0, 0, 0, 0, 0, 0); //Normal
     Receive( 33, 0, 0, 1, 0, 0, 0); //FrameError NonByteAligned
+
+    //Test some random cases
+    for(int i = 0; i < numRec; i++)begin
+      receive_conf = '0;
+      receive_conf[$urandom%7] = 1;
+      if(receive_conf[2] == 1) //Overflow
+        Rpcks = 126;
+      else
+        Rpcks = $urandom%126;
+      Receive( Rpcks, receive_conf[5], receive_conf[4], receive_conf[3], receive_conf[2], receive_conf[1], receive_conf[0]);
+    end
     
 
     $display("*************************************************************");
