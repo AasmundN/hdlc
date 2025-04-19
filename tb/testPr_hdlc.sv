@@ -17,7 +17,6 @@
    - A ReadAddress() task is provided, and addresses are documentet in the 
      HDLC Module Design Description
 */
-`include "hdlc_packet.sv"
 
 program testPr_hdlc(
   in_hdlc uin_hdlc
@@ -30,6 +29,8 @@ program testPr_hdlc(
    *                               Student code                               *
    *                                                                          *
    ****************************************************************************/
+
+  `include "hdlc_packet.sv"
   
   // VerifyAbortReceive should verify correct value in the Rx status/control
   // register, and that the Rx data buffer is zero after abort.
