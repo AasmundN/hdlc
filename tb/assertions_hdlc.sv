@@ -22,6 +22,7 @@ module assertions_hdlc (
   input  logic       Rx_AbortSignal,
   input  logic       Rx_Overflow,
   input  logic       Rx_WrBuff,
+  input  logic       Rx_EoF,
   input  logic       Tx_AbortFrame,
   input  logic       Tx_AbortedTrans,
   input  logic       Tx_ValidFrame,
@@ -197,6 +198,7 @@ module assertions_hdlc (
     $error("FAIL: Idle pattern not generated when not transmitting");
     ErrCntAssertions++;
   end
+  
 
   /********************************************
    * Verify zero insertion                    *
@@ -205,7 +207,7 @@ module assertions_hdlc (
   property TX_ZeroInsertion;
     @(posedge Clk)
     disable iff (!TransmittingFrameContent)
-    Tx[*5] |=> !Tx;
+    !Tx ##1 Tx[*5] |=> !Tx;
   endproperty
 
   TX_ZeroInsertion_Assert : assert property (TX_ZeroInsertion)

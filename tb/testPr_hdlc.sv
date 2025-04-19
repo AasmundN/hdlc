@@ -605,7 +605,6 @@ program testPr_hdlc(
     // write data to TX buffer
     for (int i = 0; i < Size; i++) begin
       BuffData[i] = $urandom;
-      //BuffData[i] = 8'b00011111;
       WriteAddress(Tx_Buff, BuffData[i]);
     end
 
@@ -627,15 +626,15 @@ program testPr_hdlc(
       // abort frame:
       WriteAddress(Tx_SC, 8'b1 << Tx_AbortFrame);
     end else begin
+      // listen to and collect transmission
       CollectTransmission(TransmittedData, Size);
     end
 
-    wait(!uin_hdlc.Tx_Done); // wait for transmition completion
+    $display("TX done");
 
     repeat(16)
       @(posedge uin_hdlc.Clk);
 
-    // TODO: insert immediate assertion tasks
     if (Abort) begin
       //Wait for system to update after abort
       repeat(30)
