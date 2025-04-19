@@ -11,22 +11,24 @@
 */
 
 module assertions_hdlc (
-  output int   ErrCntAssertions,
-  input  logic Clk,
-  input  logic Rst,
-  input  logic Rx,
-  input  logic Tx,
-  input  logic Rx_FlagDetect,
-  input  logic Rx_ValidFrame,
-  input  logic Rx_AbortDetect,
-  input  logic Rx_AbortSignal,
-  input  logic Rx_Overflow,
-  input  logic Rx_WrBuff,
-  input  logic Rx_EoF,
-  input  logic Tx_AbortFrame,
-  input  logic Tx_AbortedTrans,
-  input  logic Tx_ValidFrame,
-  input  logic Tx_Enable
+  output int         ErrCntAssertions,
+  input  logic       Clk,
+  input  logic       Rst,
+  input  logic       Rx,
+  input  logic       Tx,
+  input  logic       Rx_FlagDetect,
+  input  logic       Rx_ValidFrame,
+  input  logic       Rx_AbortDetect,
+  input  logic       Rx_AbortSignal,
+  input  logic       Rx_Overflow,
+  input  logic       Rx_WrBuff,
+  input  logic       Tx_AbortFrame,
+  input  logic       Tx_AbortedTrans,
+  input  logic       Tx_ValidFrame,
+  input  logic       Tx_Enable,
+  input  logic [7:0] Tx_FrameSize,
+  input  logic [7:0] Tx_BufferCount,
+  input  logic       Tx_Done
 );
   /*******************************************
    * Local signals and error count           *
@@ -36,9 +38,9 @@ module assertions_hdlc (
   logic TransmittingFrameContent;
 
   initial begin
-    ErrCntAssertions  =  0;
-    TransmittingFrame = 0'b0;
-    TransmittingFrameContent = 0'b0;
+    ErrCntAssertions         =  0;
+    TransmittingFrame        = '0;
+    TransmittingFrameContent = '0;
   end
 
   initial begin // TransmittingFrame is asserted during frame transmition, including flags
@@ -209,6 +211,22 @@ module assertions_hdlc (
   TX_ZeroInsertion_Assert : assert property (TX_ZeroInsertion)
   else begin
     $error("FAIL: Zero not inserted after five consecutive ones");
+    ErrCntAssertions++;
+  end
+
+  /********************************************
+   * Verify Tx_Done on emptied TX buffer      *
+   ********************************************/
+
+  property TX_Done;
+    @(posedge Clk)
+    TransmittingFrame && (Tx_BufferCount == Tx_FrameSize - 1) |-> Tx_Done;  
+  endproperty
+
+  TX_Done_Assert : assert property (TX_Done)
+    $display("PASS: Tx_Done asserted after emptied TX buffer");
+  else begin
+    $error("FAIL: Tx_Done not asserted after emptied TX buffer");
     ErrCntAssertions++;
   end
 

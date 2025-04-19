@@ -57,5 +57,7 @@ interface in_hdlc ();
   logic       Tx_Done;
   logic       Tx_ValidFrame;
   logic       Tx_Enable;
+  logic [7:0] Tx_FrameSize;
+  logic [7:0] Tx_BufferCount;
 
 endinterface
