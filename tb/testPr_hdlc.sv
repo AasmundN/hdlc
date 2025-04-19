@@ -317,7 +317,6 @@ program testPr_hdlc(
     for(int i = 0; i < Size; i++) begin
       assert(buffData[i] == transData[i+1])
         $display("PASS: Data transmitted is the same as the data sent to the buffer");
-        //$display("Trans: %08b | Buff: %08b", transData[i+1], buffData[i]);
         else begin
           $error("FAIL: Data transmitted is not the same as the data sent to the buffer");
           TbErrorCnt++;
