@@ -30,30 +30,7 @@ program testPr_hdlc(
    *                                                                          *
    ****************************************************************************/
 
-  enum logic[2:0] {
-    Tx_SC,
-    Tx_Buff,
-    Rx_SC,
-    Rx_Buff,
-    Rx_Len
-  } RegAddr;
-
-  enum int {        
-    Rx_Ready,
-    Rx_Drop,
-    Rx_FrameError,
-    Rx_AbortSignal,
-    Rx_Overflow,
-    Rx_FCSen
-  } RxSC_bits;
-
-  enum int {        
-    Tx_Done,
-    Tx_Enable,
-    Tx_AbortFrame,
-    Tx_AbortedTrans,
-    Tx_Full
-  } TxSC_bits;
+  `include "hdlc_packet.sv"
   
   // VerifyAbortReceive should verify correct value in the Rx status/control
   // register, and that the Rx data buffer is zero after abort.
@@ -458,7 +435,6 @@ program testPr_hdlc(
     Receive( 42, 0, 0, 0, 0, 1, 0); //FrameDropped
     Receive(  6, 0, 0, 0, 0, 0, 0); //Normal
     Receive( 33, 0, 0, 1, 0, 0, 0); //FrameError NonByteAligned
-    
 
     $display("*************************************************************");
     $display("%t - Finishing Test Program", $time);
