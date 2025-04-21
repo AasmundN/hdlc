@@ -6,4 +6,3 @@ transcript
 *.wlf
 .nfs*
 *.vstf
-coverage_rep.txt
